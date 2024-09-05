@@ -329,3 +329,9 @@ public class HttpStartLine {
 }
 ```
 
+
+
+<img width="359" alt="image" src="https://github.com/user-attachments/assets/0cfa2b98-7143-4a20-949d-921b94229eb8">
+![[Pasted image 20240905153017.png]]
+**tomcat-coyote.jar** - Tomcat에 TCP를 통한 프로토콜 지원
+catalina - Java Servlet을 호스팅하는 환경
