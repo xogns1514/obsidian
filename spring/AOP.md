@@ -80,9 +80,52 @@ AOP란?
 	- 상속을 사용하여 프록시를 생성하므로, final 클래스, final 메서드, private 메서드는 프록시할 수 없다. 
 
 ### 스프링 AOP
-- 스프링 AOP는 순수 자바로 구현된다. 특별한 컴파일 프로세스가 필요하지 않습니다. 
+- 스프링 AOP는 `순수 자바`로 구현된다. 특별한 컴파일 프로세스가 필요하지 않습니다. 
 - 스프링 AOP는 클래스 로더 계층 구조를 제어할 필요가 없으므로 서블릿 컨테이너 또는 애플리케이션 서버에서 사용하기에 적합하다. → 원본 클래스 자체를 수정하거나, 클래스 로딩 시점에 직접적인 개입을 하지 않기 때문이다. 
 - 목표
 	- 엔터프라이즈 애플리케이션의 일반적인 문제를 해결하는 데 도움이 되도록 AOP 구현과 스프링 IoC간의 긴밀한 통합을 제공하는 것이 목표이다.
 	- 스프링 프레임워크의 AOP 기능은 일반적으로 스프링 IoC 컨테이너와 함께 사용된다. 
 - 스프링 프레임워크의 핵심 철학 중 하나는 비침투성이다. → 비즈니스 또는 도메인 모델에 프레임워크 클래스 or 인터페이스 강제 도입 X
+	→ 하지만 필요에 따라 코드베이스에 스프링 프레임워크의 특징 종속성을 도입할 수 있는 옵션을 제공한다. 왜냐하면 특정 상황에서는 특정 기능을 읽거나 코딩하는 데 더 쉬울 수 있기 때문이다. 
+ 
+
+- 어드바이스
+	- 타깃에 적용할 부가기능을 정의한다. 
+	- 스프링의 어드바이스는 타깃의 메서드로 제한하고 있다. 
+	- 어드바이스를 적용하려면 위치를 지정해야 한다. 
+	- 스프링은 주로 메서드 호출 시점에 부가기능을 적용한다. 
+		- MethodInterceptor: 메서드 호출할 때 부가 기능을 적용한다. 
+		- MethodBeforeAdvice: 메서드 호출 전에 실행할 부가기능을 정의한 메서드
+		- AfterReturnAdvice: 메서드 호출 후에 실행할 부가기능을 정의한 메서드
+		- ThrowsAdvice: 애플리케이션에서 예외 처리와 로깅을 한 곳으로 모을 수 있다.
+
+- 포인트 컷
+	- 어드바이스 적용을 모든 메서드가 아닌 특정 메서드로 제한하려면 포인트컷을 사용해야 한다. 
+	- 스프링 AOP가 제공하는 Pointcut 인터페이스를 살펴보면 MethodMatcher를 지원한다. MethodMatcher는 메서드 이름, 메서드 시그니처, 메서드 인수 등을 사용하여 메서드를 선택한다. 
+	- StaticMethodMatcherPointcut(정적 포인트컷)
+		- 대상 메서드에 대해 한 번만 MethodMatcher의 matches() 메서드를 호출한다.
+		- 반환값은 캐싱하여 메서드를 호출하는 데 사용된다.
+		- 메서드를 호출할 때 추가적인 검사가 필요하지 않아 동적 포인컷보다 성능이 훨씬 좋다.
+	- DynamicMethodMatcherPointcut(동적 포인트컷)
+		- 메서드를 호출하면 matches(Method, Class<T>) 메서드를 사용해 정적 검사를 한다.
+		- 위에서 true를 반환하면, matches(Method, Class<T>, Object[]) 메서드를 사용해 추가로 검사를 수행한다.
+	- AspectJ 포인트컷 표현식
+		- 스프링 AOP보다 많은 기능을 가진 AOP 구현체인 AspectJ를 사용하면 표현식으로 포인트컷을 정의할 수 있다. AspectJ를 사용하려면 build.gradle에 aspectjweaver, aspectjrt 의존성을 추가해야 한다.
+		- ex) “execution(*getMessage*(…))”
+	- Annotation 매칭 포인트 컷
+		- 커스텀 어노테이션이 적용된 메서드나 타입에 어드바이스를 적용하고 싶을 때 사용한다. 
+		- ex) AnnotationMatchingPointcut.forMethodAnnotation(CustomAnnotation::class.java)
+
+### AspectJ
+- 스프링 AOP는 완전한 솔루션을 제공하지 않는다. 
+- 스프링 컨테이너에서 관리하는 Bean에만 적용할 수 있다.
+- AspectJ는 완전한 AOP 솔루션 제공을 목표로 한다.
+- 스프링 AOP보다 더 다양한 기능을 제공한다.
+- AspectJ와 스프링 AOP의 가장 큰 차이점은 위빙(weaving) 시점이다.
+- 위빙이란 애플리케이션 코드의 적절한 위치에 애스펙트(Advisor)를 적용하는 과정을 말한다.
+- 스프링 AOP는 프록시 메커니즘을 사용해 런타임 시점에 위빙을 수행한다. 
+- 반면 AspectJ는 컴파일 시점(CTW)이나 로딩 시점(Load-Time Weaving, LTW)에 위빙을 수행한다.
+- AspectJ는 자바만으로 잘 해결되지 않는 횡단 관심사(crosscutting concerns)를 해결하기 위해 사용된다.
+
+- AnnotatedAdvice 클래스에 @Aspect를 사용하여 AspectJ AOP를 적용한다.
+- @Component를 붙여야 스프링 빈으로 등록된다.
