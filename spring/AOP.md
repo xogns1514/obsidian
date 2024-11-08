@@ -11,11 +11,13 @@
 - 타깃에 부가기능을 부여하는 패턴
 
 ### JDK Proxy로 프록시 적용하기
+<img width="373" alt="image" src="https://github.com/user-attachments/assets/8e207ff5-3259-4f96-884a-bdcdd7116ae8">
+
 ```java
 final var userService = (UserService) Proxy.newProxyInstance(
-	getClass().getClassLoader(),
-	new Class[] {UserService.class},
-	new TransactionHandler(plaformTransactionManager, new  AppUserService(userDao, userHistory))
+	getClass().getClassLoader(), // 프록시를 만들 ClassLoader
+	new Class[] {UserService.class}, // 프록시를 만들 인터페이스
+	new TransactionHandler(plaformTransactionManager, new  AppUserService(userDao, userHistory)) // 프록시의 내용, 직접 작성한 구현체
 );
 ```
 ```java
@@ -34,6 +36,7 @@ public class TransactionHandler implements InvocationHandler {
 - Proxy로 생성한 객체의 타입은 UserService다. AppUserService가 아니므로 스프링 빈 등록이 불가하다. 
 - 매번 인터페이스를 만들고, 프록시를 적용할 InvocationHandler를 구현해야 한다. 
 - 메서드만 프록시를 적용할 수 있다. 
+- JDK 프록시는 인터페이스에 적혀있는 모든 메서드에 프록시를 적용시킨다. 
 
 ### ProxyFactoryBean 도입하기
 - JDK Proxy를 사용할 때 문제점을 해결하기 이해 스프링이 제공하는 클래스
@@ -72,10 +75,37 @@ AOP란?
 	- AspectJ
 
 ### CGLIB(Code Generator Library)
+<img width="373" alt="image" src="https://github.com/user-attachments/assets/c05d4ae0-2a70-4c90-96ef-8090651a16e8">
+
+```java
+public class SecurityMethodInterceptor implements MethodInterceptor {
+
+	private final MethodMatcher methodMatcher;
+
+	@Override
+	public Object intercept(final Object obj, final Method method, final Object[] args, final MethodProxy methodProxy) throws Throwable {
+		if (methodMatcher.matches(method)) {
+			// 특정 메서드에 프록시 적용
+		}
+	}
+}
+```
+```java
+.
+.
+@Override
+public Object getProxy() {
+	final Enhancer enhancer = new Enhancer();
+	enhancer.setSuperclass(targetClass);
+	enhancer.setCallback(methodInterceptor); //handler
+	return enhancer.create(); // proxy 생성
+}
+```
 - 서드파티 코드나 수정할 수 없는 레거시 코드로 작업할 때, 인터페이스를 사용할 수 없는 경우가 있다. 이때는 CGLIB를 사용해야 한다. 
 - 동적으로 새 클래스에 대한 바이트코드를 생성하고, 이미 생성된 클래스를 사용할 수 있다면 재사용한다. 
 - CGLIB 프록시는 타깃 메서드에 적절한 바이트코드를 생성하여 프록시로 인한 성능 오버헤드를 줄인다. 
 	- 매번 invoke()를 호출하는 JDK 프록시와 비교하면 CGLIB는 한 번만 수행되기에 성능이 더 좋다. 
+- MethodMatcher 객체를 사용하여 특정 메서드만 프록시화 하고, 나머지는 프록시를 거치지 않고 실제 객체 메서드를 호출하도록 만들 수 있다.
 - 주의점
 	- 상속을 사용하여 프록시를 생성하므로, final 클래스, final 메서드, private 메서드는 프록시할 수 없다. 
 
@@ -87,7 +117,8 @@ AOP란?
 	- 스프링 프레임워크의 AOP 기능은 일반적으로 스프링 IoC 컨테이너와 함께 사용된다. 
 - 스프링 프레임워크의 핵심 철학 중 하나는 비침투성이다. → 비즈니스 또는 도메인 모델에 프레임워크 클래스 or 인터페이스 강제 도입 X
 	→ 하지만 필요에 따라 코드베이스에 스프링 프레임워크의 특징 종속성을 도입할 수 있는 옵션을 제공한다. 왜냐하면 특정 상황에서는 특정 기능을 읽거나 코딩하는 데 더 쉬울 수 있기 때문이다. 
- 
+- Runtime Weaving: Aspect가 대상 객체의 Proxy를 실행시 Weaving된다. 
+	- 사용자의 특정 호출 시점에 IoC 컨테이너에 의해 AOP를 할 수 있는 Proxy Bean을 생성해준다. 
 
 - 어드바이스
 	- 타깃에 적용할 부가기능을 정의한다. 
@@ -117,15 +148,20 @@ AOP란?
 		- ex) AnnotationMatchingPointcut.forMethodAnnotation(CustomAnnotation::class.java)
 
 ### AspectJ
+<img width="725" alt="image" src="https://github.com/user-attachments/assets/47f94a84-3585-4d81-8796-08d4ab972ef6">
+
 - 스프링 AOP는 완전한 솔루션을 제공하지 않는다. 
 - 스프링 컨테이너에서 관리하는 Bean에만 적용할 수 있다.
 - AspectJ는 완전한 AOP 솔루션 제공을 목표로 한다.
 - 스프링 AOP보다 더 다양한 기능을 제공한다.
 - AspectJ와 스프링 AOP의 가장 큰 차이점은 위빙(weaving) 시점이다.
-- 위빙이란 애플리케이션 코드의 적절한 위치에 애스펙트(Advisor)를 적용하는 과정을 말한다.
+- `위빙`이란 애플리케이션 코드의 적절한 위치에 애스펙트(Advisor)를 적용하는 과정을 말한다.
 - 스프링 AOP는 프록시 메커니즘을 사용해 런타임 시점에 위빙을 수행한다. 
-- 반면 AspectJ는 컴파일 시점(CTW)이나 로딩 시점(Load-Time Weaving, LTW)에 위빙을 수행한다.
-- AspectJ는 자바만으로 잘 해결되지 않는 횡단 관심사(crosscutting concerns)를 해결하기 위해 사용된다.
-
+- 3가지 유형의 바이트코드 weaving을 사용한다.
+	- Compile-time weaving: AspectJ 컴파일러는 aspect와 애플리케이션의 소스 코드를 입력으로 취하고 출력으로 엮인 클래스 파일을 생성한다. 
+	- Post-compile weaving: 기존 클래스 파일와 JAR파일을 위빙하는데 사용한다. 
+	- Load-time weaving: 조작되지 않은 바이트코드가 JVM에 로드될 때 ClassLoader를 이용하여 바이트코드를 조작하는 위빙 방식이다. 
+	→ `런타임 시점에 영향을 끼치지 않는다.`
+	→ 밴치마킹상 AspectJ가 Spring AOP보다 최소 8배, 최대 35배정도 빠르다.
 - AnnotatedAdvice 클래스에 @Aspect를 사용하여 AspectJ AOP를 적용한다.
 - @Component를 붙여야 스프링 빈으로 등록된다.
