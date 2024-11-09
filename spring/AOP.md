@@ -107,7 +107,31 @@ public Object getProxy() {
 	- 매번 invoke()를 호출하는 JDK 프록시와 비교하면 CGLIB는 한 번만 수행되기에 성능이 더 좋다. 
 - MethodMatcher 객체를 사용하여 특정 메서드만 프록시화 하고, 나머지는 프록시를 거치지 않고 실제 객체 메서드를 호출하도록 만들 수 있다.
 - 주의점
-	- 상속을 사용하여 프록시를 생성하므로, final 클래스, final 메서드, private 메서드는 프록시할 수 없다. 
+	- 상속을 사용하여 프록시를 생성하므로, final 클래스, final 메서드, private 메서드는 프록시할 수 없다.
+- 한계점
+	- default 생성자 필요
+	- 생성자 2번 호출 
+	- → 두 문제 모두 스프링 4버전부터는 Objenesis 라이브러리 도움으로 해결
+	- *Objenesis: 생성자를 호출하지 않고 인스턴스를 생성하게 해주는 라이브러리(프록시, 직렬화, Mockito..)
+
+### AspectJ
+<img width="725" alt="image" src="https://github.com/user-attachments/assets/47f94a84-3585-4d81-8796-08d4ab972ef6">
+
+- 스프링 AOP는 완전한 솔루션을 제공하지 않는다. 
+- 스프링 컨테이너에서 관리하는 Bean에만 적용할 수 있다.
+- AspectJ는 완전한 AOP 솔루션 제공을 목표로 한다.
+- 스프링 AOP보다 더 다양한 기능을 제공한다.
+- AspectJ와 스프링 AOP의 가장 큰 차이점은 위빙(weaving) 시점이다.
+- `위빙`이란 애플리케이션 코드의 적절한 위치에 애스펙트(Advisor)를 적용하는 과정을 말한다.
+- 스프링 AOP는 프록시 메커니즘을 사용해 런타임 시점에 위빙을 수행한다. 
+- 3가지 유형의 바이트코드 weaving을 사용한다.
+	- Compile-time weaving: AspectJ 컴파일러는 aspect와 애플리케이션의 소스 코드를 입력으로 취하고 출력으로 엮인 클래스 파일을 생성한다. 
+	- Post-compile weaving: 기존 클래스 파일와 JAR파일을 위빙하는데 사용한다. 
+	- Load-time weaving: 조작되지 않은 바이트코드가 JVM에 로드될 때 ClassLoader를 이용하여 바이트코드를 조작하는 위빙 방식이다. 
+	→ `런타임 시점에 영향을 끼치지 않는다.`
+	→ 밴치마킹상 AspectJ가 Spring AOP보다 최소 8배, 최대 35배정도 빠르다.
+- AnnotatedAdvice 클래스에 @Aspect를 사용하여 AspectJ AOP를 적용한다.
+- @Component를 붙여야 스프링 빈으로 등록된다.
 
 ### 스프링 AOP
 - 스프링 AOP는 `순수 자바`로 구현된다. 특별한 컴파일 프로세스가 필요하지 않습니다. 
@@ -147,21 +171,3 @@ public Object getProxy() {
 		- 커스텀 어노테이션이 적용된 메서드나 타입에 어드바이스를 적용하고 싶을 때 사용한다. 
 		- ex) AnnotationMatchingPointcut.forMethodAnnotation(CustomAnnotation::class.java)
 
-### AspectJ
-<img width="725" alt="image" src="https://github.com/user-attachments/assets/47f94a84-3585-4d81-8796-08d4ab972ef6">
-
-- 스프링 AOP는 완전한 솔루션을 제공하지 않는다. 
-- 스프링 컨테이너에서 관리하는 Bean에만 적용할 수 있다.
-- AspectJ는 완전한 AOP 솔루션 제공을 목표로 한다.
-- 스프링 AOP보다 더 다양한 기능을 제공한다.
-- AspectJ와 스프링 AOP의 가장 큰 차이점은 위빙(weaving) 시점이다.
-- `위빙`이란 애플리케이션 코드의 적절한 위치에 애스펙트(Advisor)를 적용하는 과정을 말한다.
-- 스프링 AOP는 프록시 메커니즘을 사용해 런타임 시점에 위빙을 수행한다. 
-- 3가지 유형의 바이트코드 weaving을 사용한다.
-	- Compile-time weaving: AspectJ 컴파일러는 aspect와 애플리케이션의 소스 코드를 입력으로 취하고 출력으로 엮인 클래스 파일을 생성한다. 
-	- Post-compile weaving: 기존 클래스 파일와 JAR파일을 위빙하는데 사용한다. 
-	- Load-time weaving: 조작되지 않은 바이트코드가 JVM에 로드될 때 ClassLoader를 이용하여 바이트코드를 조작하는 위빙 방식이다. 
-	→ `런타임 시점에 영향을 끼치지 않는다.`
-	→ 밴치마킹상 AspectJ가 Spring AOP보다 최소 8배, 최대 35배정도 빠르다.
-- AnnotatedAdvice 클래스에 @Aspect를 사용하여 AspectJ AOP를 적용한다.
-- @Component를 붙여야 스프링 빈으로 등록된다.
