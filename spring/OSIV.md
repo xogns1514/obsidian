@@ -181,3 +181,5 @@ public class UserController {
 
 컨트롤러에서 엔티티를 수정하고 즉시 뷰를 호출한 것이 아니라 트랜잭션이 동작하는 비즈니스 로직을 호출했으므로 문제가 발생한 것이다. 스프링 OSIV는 같은 영속성 컨텍스트를 여러 트랜잭션이 공유할 수 있으므로 위와 같은 문제가 발생할 수 있다.
 
+- 참고
+- https://hudi.blog/multi-datasource-issue-with-osiv/
